@@ -4,7 +4,7 @@
 
 #include "tsh.h"
 #include <iostream>
-#include<unistd.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     bool is_tty;
@@ -13,8 +13,9 @@ int main(int argc, char *argv[]) {
         is_tty = true;
     }
 
-    Tsh tsh(is_tty);
-    tsh.start();
+    tsh::Shell::initialize();
+    tsh::Shell::set_tty(is_tty);
+    tsh::Shell::start();
 
     return 0;
 }
