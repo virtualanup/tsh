@@ -11,25 +11,35 @@ extern const std::string red;
 extern const std::string reset;
 extern const std::string blue;
 
+// Singeleton design pattern is used as there can only be one
+// instance of shell. The shell object can only be accessed
+// via getShell.
+
+class Shell;
+Shell &getShell();
+
 class Shell {
 protected:
-    static std::string cwd;
-    static std::string command;
-    static std::string prompt_str;
-    static bool is_tty;
-    static bool last_command_success;
-    static bool show_prompt;
+    std::string cwd;
+    std::string command;
+    std::string prompt_str;
+
+    bool is_tty;
+    bool last_command_success;
+    bool show_prompt;
 
 private:
-    Shell() {}
+    Shell();
     virtual ~Shell() {}
 
 public:
-    static void set_tty(bool tty);
-    static void set_show_prompt(bool show);
-    static void set_prompt(const std::string&);
-    static void initialize();
-    static void start();
+    void set_tty(bool tty);
+    void set_show_prompt(bool show);
+    void set_prompt(const std::string &);
+    void initialize();
+    void start();
+
+    friend Shell &getShell();
 };
 
 } // namespace tsh

@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
         is_tty = true;
     }
 
-    tsh::Shell::initialize();
-    tsh::Shell::set_tty(is_tty);
-    tsh::Shell::start();
-
+    tsh::Shell &shell = tsh::getShell();
+    shell.initialize();
+    shell.set_tty(is_tty);
+    shell.start();
     return 0;
 }

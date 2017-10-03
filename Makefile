@@ -1,6 +1,6 @@
 DEBUG = -g
 CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -c $(DEBUG)
-LFLAGS = -Wall -lm
+LFLAGS = -Wall -lm -lreadline
 
 SRCDIR := src
 BUILDDIR := build

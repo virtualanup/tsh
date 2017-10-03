@@ -1,19 +1,24 @@
 #include "tsh.h"
 
+#include <readline/history.h>
+#include <readline/readline.h>
+
 namespace tsh {
 
 const std::string red("\033[1;31m");
 const std::string reset("\033[0m");
 const std::string blue("\033[1;34m");
 
-// Initialize the static members
-std::string Shell::cwd("");
-std::string Shell::command("");
-std::string Shell::prompt_str("▶ ");
+Shell &getShell() {
+    static Shell shell;
+    return shell;
+}
 
-bool Shell::is_tty = false;
-bool Shell::last_command_success = true;
-bool Shell::show_prompt = true;
+Shell::Shell()
+    : cwd(""), command(""), prompt_str("▶ "), is_tty(false),
+      last_command_success(false), show_prompt(true) {
+    std::cout << "Shell created" << std::endl;
+}
 
 void Shell::initialize() { cwd = getcwd(NULL, 0); }
 
@@ -26,25 +31,36 @@ void Shell::set_prompt(const std::string &prompt) { prompt_str = prompt + " "; }
 void Shell::start() {
     // enter the main loop for the shell
     while (true) {
+        // read line via readline
+        char *rl_cmd;
+
+        std::string prompt;
+        // print the prompt in red color if last command was error. Else,
+        // print in white.
         if (is_tty && show_prompt) {
             // print the path in blue color
-            std::cout << std::endl << blue << cwd << reset << std::endl;
-            // print the prompt in red color if last command was error. Else,
-            // print in white.
-            if (last_command_success)
-                std::cout << prompt_str;
-            else
-                std::cout << red << prompt_str << reset;
+            prompt += blue + cwd + reset + "\n";
             last_command_success = !last_command_success;
-        }
 
-        std::getline(std::cin, command);
+            if (last_command_success)
+                prompt += red + prompt_str + reset;
+            else
+                prompt += prompt_str;
+        } else
+            prompt = "";
+
+        rl_cmd = readline(prompt.c_str());
+
+        if (!rl_cmd)
+            break;
+
+        command = rl_cmd;
+
+        // free the memory
+        free(rl_cmd);
 
         // process the command
-
-        if (std::cin.eof()) {
-            break;
-        }
+        std::cout << command << std::endl;
     }
 }
 } // namespace tsh
