@@ -1,9 +1,9 @@
 #ifndef TSH_TOKENIZER_H
 #define TSH_TOKENIZER_H
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include<iostream>
 #include <vector>
 
 namespace tsh {
@@ -16,12 +16,8 @@ enum TokenType {
     TOK_EOF,
 };
 
-const char* const TokenNames[] = {
-    "TOK_STR",
-    "TOK_PIPE",
-    "TOK_AMP",
-    "TOK_SCL",
-    "TOK_EOF",
+const char *const TokenNames[] = {
+    "TOK_STR", "TOK_PIPE", "TOK_AMP", "TOK_SCL", "TOK_EOF",
 };
 
 class Token {
@@ -42,19 +38,20 @@ public:
 enum TokenizerState { STATE_NORMAL, STATE_QUOTE, STATE_DB_QUOTE, STATE_ERROR };
 
 class Tokenizer {
+public:
     std::shared_ptr<std::string> command;
     size_t inppos;
-    size_t pos;
     TokenizerState state;
 
 public:
     Tokenizer();
     virtual ~Tokenizer();
+
+    void add_string(const std::string &);
+    const std::string &get_command() const;
     TokenizerState get_state();
     void reset();
-    void add_string(const std::string &);
-    const std::string &get_command();
-    std::unique_ptr<std::vector<Token>> tokenize();
+    std::unique_ptr<std::vector<Token>> tokenize() const;
 };
 
 } // namespace tsh

@@ -1,4 +1,5 @@
 #include "tsh.h"
+#include "parser.h"
 #include "tokenizer.h"
 
 #include <readline/history.h>
@@ -30,6 +31,7 @@ void Shell::set_show_prompt(bool show) { show_prompt = show; }
 void Shell::set_prompt(const std::string &prompt) { prompt_str = prompt + " "; }
 
 void Shell::start() {
+    Parser parser;
     Tokenizer tokenizer;
     // enter the main loop for the shell
     while (true) {
@@ -85,13 +87,20 @@ void Shell::start() {
             free(rl_cmd);
         }
 
-        // process the command
-        std::cout << tokenizer.get_command() << std::endl;
-
+        // debug information about the tokens
         auto tokens = tokenizer.tokenize();
-        for(size_t i=0; i<tokens->size(); i++)
+        std::cout << "Tokenizer output " << std::endl;
+        for (size_t i = 0; i < tokens->size(); i++) {
             (*tokens)[i].print();
+        }
+        std::cout << "End of tokens" << std::endl;
 
+        std::cout << "Trying to parse" << std::endl;
+        // parse the command
+        auto jobs = parser.parse(tokenizer);
+
+        // debug information about the jobs
+        std::cout << jobs->size() << " jobs in the command" << std::endl;
     }
 }
 } // namespace tsh

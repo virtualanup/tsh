@@ -10,23 +10,14 @@ Token::Token(TokenType token_type, const std::string &token_text,
 
 void Token::print() {
     // print information about the token
-    std::cout << TokenNames[static_cast<int>(type)] << "\t\t"<<'"' << text << '"' << "\t\t"
-              << start << " and " << end << std::endl;
+    std::cout << TokenNames[static_cast<int>(type)] << "\t\t" << '"' << text
+              << '"' << "\t\t[" << start << " , " << end << ")"<<std::endl;
 }
 Token::~Token() {}
 
 // Tokenizer class definitions
 Tokenizer::Tokenizer() : command(new std::string) { reset(); }
 Tokenizer::~Tokenizer() {}
-
-TokenizerState Tokenizer::get_state() { return state; }
-
-void Tokenizer::reset() {
-    state = STATE_NORMAL;
-    inppos = 0;
-    pos = 0;
-    (*command) = "";
-}
 
 void Tokenizer::add_string(const std::string &str) {
     // Add a string to the tokenizer. This will update the state of the
@@ -53,9 +44,20 @@ void Tokenizer::add_string(const std::string &str) {
     }
 }
 
-const std::string &Tokenizer::get_command() { return *command; }
-std::unique_ptr<std::vector<Token>> Tokenizer::tokenize() {
+const std::string &Tokenizer::get_command() const { return *command; }
+
+TokenizerState Tokenizer::get_state() { return state; }
+
+void Tokenizer::reset() {
+    state = STATE_NORMAL;
+    inppos = 0;
+    (*command) = "";
+}
+
+
+std::unique_ptr<std::vector<Token>> Tokenizer::tokenize() const {
     auto tokens = std::unique_ptr<std::vector<Token>>(new std::vector<Token>);
+    size_t pos = 0;
     size_t prevpos = 0;
 
     while (pos < command->size()) {
@@ -108,7 +110,7 @@ std::unique_ptr<std::vector<Token>> Tokenizer::tokenize() {
             }
         } // switch
     }
-    tokens->push_back(Token(TOK_EOF, "", prevpos, pos, command));
+    tokens->push_back(Token(TOK_EOF, "", pos, pos, command));
     return tokens;
 }
 } // namespace tsh
