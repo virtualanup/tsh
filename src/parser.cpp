@@ -2,11 +2,6 @@
 
 namespace tsh {
 
-Command::Command(std::string cmd) : command(cmd) {}
-
-Job::Job() : is_background(false), str("") {}
-Job::~Job() {}
-
 Parser::Parser() {}
 Parser::~Parser() {}
 
@@ -51,15 +46,15 @@ Parser::parse(const Tokenizer &tokenizer) {
                     pos++;
                     break;
                 }
-                if((*tokens)[pos].type == TOK_PIPE)
-                {
+                if ((*tokens)[pos].type == TOK_PIPE) {
                     // skip the pipe
                     pos++;
                 }
             }
             // get the command text for the current job
             size_t cmd_end = (*tokens)[pos].start;
-            curjob->str = tokenizer.get_command().substr(cmd_start, cmd_end-cmd_start);
+            curjob->str =
+                tokenizer.get_command().substr(cmd_start, cmd_end - cmd_start);
             // add the job to the list
             jobs->push_back(curjob);
         }
