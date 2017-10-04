@@ -98,6 +98,24 @@ void Shell::start() {
         std::cout << "Trying to parse" << std::endl;
         // parse the command
         auto jobs = parser.parse(tokenizer);
+        for (auto job = jobs->begin(); job != jobs->end(); job++) {
+            std::cout << "------------------" << std::endl;
+
+            std::cout << "'"<<(*job)->str <<"'"<< std::endl;
+            if ((*job)->is_background)
+                std::cout << "Background job" << std::endl;
+            else
+                std::cout << "Foreground job" << std::endl;
+            std::cout<<(*job)->commands.size()<<" piped commands in job"<<std::endl;
+            for(auto cmd = (*job)->commands.begin(); cmd != (*job)->commands.end(); cmd++)
+            {
+                std::cout<<"\t"<<'"'<<(*cmd)->command<<'"'<<std::endl;
+                // print the arguments
+                for(auto arg = (*cmd)->arguments.begin(); arg != (*cmd)->arguments.end(); arg++)
+                    std::cout<<"\t\t"<<'"'<<(*arg)<<'"'<<std::endl;
+            }
+            std::cout << "------------------" << std::endl << std::endl;
+        }
 
         // debug information about the jobs
         std::cout << jobs->size() << " jobs in the command" << std::endl;

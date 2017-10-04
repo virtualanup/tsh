@@ -51,10 +51,15 @@ Parser::parse(const Tokenizer &tokenizer) {
                     pos++;
                     break;
                 }
+                if((*tokens)[pos].type == TOK_PIPE)
+                {
+                    // skip the pipe
+                    pos++;
+                }
             }
             // get the command text for the current job
             size_t cmd_end = (*tokens)[pos].start;
-            curjob->str = tokenizer.get_command().substr(cmd_start, cmd_end);
+            curjob->str = tokenizer.get_command().substr(cmd_start, cmd_end-cmd_start);
             // add the job to the list
             jobs->push_back(curjob);
         }
