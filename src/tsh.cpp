@@ -65,6 +65,10 @@ void Shell::start() {
 
         while (tokenizer.get_state() == STATE_DB_QUOTE ||
                tokenizer.get_state() == STATE_QUOTE) {
+
+            // Add \n as user can be giving multiline input
+            tokenizer.add_string("\n");
+
             // Incomplete input. Get remainder of input
             std::string nextinput;
             std::string prompt;
@@ -83,6 +87,11 @@ void Shell::start() {
 
         // process the command
         std::cout << tokenizer.get_command() << std::endl;
+
+        auto tokens = tokenizer.tokenize();
+        for(size_t i=0; i<tokens->size(); i++)
+            (*tokens)[i].print();
+
     }
 }
 } // namespace tsh

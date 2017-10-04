@@ -1,3 +1,3 @@
-# TinyShell
+# TSH
 
-tsh is a tiny shell made in C++
+tsh is a small shell made in C++
