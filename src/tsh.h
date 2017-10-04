@@ -21,8 +21,9 @@ Shell &getShell();
 class Shell {
 protected:
     std::string cwd;
-    std::string command;
     std::string prompt_str;
+    // Prompt to show when more input is required
+    std::string partial_prompt_str;
 
     bool is_tty;
     bool last_command_success;

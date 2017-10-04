@@ -1,4 +1,5 @@
 #include "tsh.h"
+#include "tokenizer.h"
 
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -15,7 +16,7 @@ Shell &getShell() {
 }
 
 Shell::Shell()
-    : cwd(""), command(""), prompt_str("▶ "), is_tty(false),
+    : cwd(""), prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
       last_command_success(false), show_prompt(true) {
     std::cout << "Shell created" << std::endl;
 }
@@ -29,12 +30,14 @@ void Shell::set_show_prompt(bool show) { show_prompt = show; }
 void Shell::set_prompt(const std::string &prompt) { prompt_str = prompt + " "; }
 
 void Shell::start() {
+    Tokenizer tokenizer;
     // enter the main loop for the shell
     while (true) {
         // read line via readline
         char *rl_cmd;
-
         std::string prompt;
+
+        tokenizer.reset();
         // print the prompt in red color if last command was error. Else,
         // print in white.
         if (is_tty && show_prompt) {
@@ -54,13 +57,32 @@ void Shell::start() {
         if (!rl_cmd)
             break;
 
-        command = rl_cmd;
+        // add to tokenizer
+        tokenizer.add_string(rl_cmd);
 
         // free the memory
         free(rl_cmd);
 
+        while (tokenizer.get_state() == STATE_DB_QUOTE ||
+               tokenizer.get_state() == STATE_QUOTE) {
+            // Incomplete input. Get remainder of input
+            std::string nextinput;
+            std::string prompt;
+            if (is_tty && show_prompt)
+                prompt = partial_prompt_str;
+            rl_cmd = readline(prompt.c_str());
+
+            // Add rl_cmd to string
+            if (!rl_cmd) {
+                // ERROR: Incomplete input
+                break;
+            }
+            tokenizer.add_string(rl_cmd);
+            free(rl_cmd);
+        }
+
         // process the command
-        std::cout << command << std::endl;
+        std::cout << tokenizer.get_command() << std::endl;
     }
 }
 } // namespace tsh
