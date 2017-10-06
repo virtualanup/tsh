@@ -28,14 +28,20 @@ protected:
     bool is_tty;
     bool last_command_success;
     bool show_prompt;
+    bool print_tokens;
+    bool print_parse_tree;
 
 private:
     Shell();
     virtual ~Shell() {}
 
 public:
+
     void set_tty(bool tty);
     void set_show_prompt(bool show);
+    void set_print_tokens(bool print);
+    void set_print_parsetree(bool print);
+
     void set_prompt(const std::string &);
     void initialize();
     void start();

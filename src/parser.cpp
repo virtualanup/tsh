@@ -22,7 +22,7 @@ Parser::parse(const Tokenizer &tokenizer) {
         case TOK_PIPE:
             // We are expecting TOK_STR.
             // Should not be here. Print error
-            throw std::string("Parse error");
+            throw std::string("Parse Error");
             break;
         default:
             // add a job
@@ -31,6 +31,11 @@ Parser::parse(const Tokenizer &tokenizer) {
 
             while ((*tokens)[pos].type != TOK_SCL &&
                    (*tokens)[pos].type != TOK_EOF) {
+                if((*tokens)[pos].type != TOK_STR)
+                {
+                    throw std::string("Parse Error");
+                }
+
                 auto cur_command =
                     std::shared_ptr<Command>(new Command((*tokens)[pos].text));
                 curjob->commands.push_back(cur_command);
