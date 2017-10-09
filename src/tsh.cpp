@@ -132,12 +132,33 @@ void Shell::start() {
                 std::cout << jobs->size() << " jobs in the command"
                           << std::endl;
             }
+
+            // Run the command
+
+            for (auto job = jobs->begin(); job != jobs->end(); job++) {
+                if (runjob(*job) == 0)
+                    last_command_success = true;
+                else
+                    last_command_success = false;
+            }
+
         } catch (const std::string &error) {
             std::cout << "Error : " << error << std::endl;
             last_command_success = false;
             continue;
         }
-        last_command_success = true;
     }
 }
+
+int Shell::runjob(std::shared_ptr<Job> job) {
+    std::cout << "Job is " << job->str << std::endl;
+    return 1;
+}
+
+void Shell::run_builtin_command(std::shared_ptr<Job> job) {
+    std::cout << "running built in " << job->str << std::endl;
+}
+
+bool is_builtin(const std::string &command) { return false; }
+
 } // namespace tsh

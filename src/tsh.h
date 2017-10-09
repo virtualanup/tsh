@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <istream>
+#include <memory>
 #include <string>
 #include <unistd.h>
 namespace tsh {
@@ -18,6 +19,8 @@ extern const std::string blue;
 class Shell;
 Shell &getShell();
 
+class Job;
+
 class Shell {
 protected:
     std::string cwd;
@@ -31,12 +34,12 @@ protected:
     bool print_tokens;
     bool print_parse_tree;
 
-private:
     Shell();
     virtual ~Shell() {}
 
-public:
+    void run_builtin_command(std::shared_ptr<Job>);
 
+public:
     void set_tty(bool tty);
     void set_show_prompt(bool show);
     void set_print_tokens(bool print);
@@ -45,6 +48,10 @@ public:
     void set_prompt(const std::string &);
     void initialize();
     void start();
+
+    int runjob(std::shared_ptr<Job>);
+
+    bool is_builtin(const std::string &);
 
     friend Shell &getShell();
 };
