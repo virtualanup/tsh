@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "tokenizer.h"
 
+#include <climits>
 #include <readline/history.h>
 #include <readline/readline.h>
 
@@ -19,11 +20,9 @@ Shell &getShell() {
 Shell::Shell()
     : cwd(""), prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
       last_command_success(true), show_prompt(true), print_tokens(false),
-      print_parse_tree(false)
+      print_parse_tree(false), fg_process(NULL), max_jid(0)
 
-{
-    std::cout << "Shell created" << std::endl;
-}
+{}
 
 void Shell::initialize() { cwd = getcwd(NULL, 0); }
 
@@ -103,11 +102,12 @@ void Shell::start() {
         // parse the command
 
         try {
-            auto jobs = parser.parse(tokenizer);
+            auto job_list = parser.parse(tokenizer);
             if (print_parse_tree) {
                 std::cout << std::endl << std::endl;
                 std::cout << "Parse tree" << std::endl;
-                for (auto job = jobs->begin(); job != jobs->end(); job++) {
+                for (auto job = job_list->begin(); job != job_list->end();
+                     job++) {
                     std::cout << std::endl;
                     std::cout << "'" << (*job)->str << "'" << std::endl;
                     if ((*job)->is_background)
@@ -118,24 +118,23 @@ void Shell::start() {
                               << " piped commands in job" << std::endl;
                     for (auto cmd = (*job)->commands.begin();
                          cmd != (*job)->commands.end(); cmd++) {
-                        std::cout << "\t" << '"' << (*cmd)->command << '"'
+                        std::cout << "\t" << '"' << (*cmd).command << '"'
                                   << std::endl;
                         // print the arguments
-                        for (auto arg = (*cmd)->arguments.begin();
-                             arg != (*cmd)->arguments.end(); arg++)
+                        for (auto arg = cmd->arguments.begin();
+                             arg != cmd->arguments.end(); arg++)
                             std::cout << "\t\t" << '"' << (*arg) << '"'
                                       << std::endl;
                     }
                     std::cout << std::endl;
                 }
                 // debug information about the jobs
-                std::cout << jobs->size() << " jobs in the command"
+                std::cout << job_list->size() << " job_list in the command"
                           << std::endl;
             }
 
             // Run the command
-
-            for (auto job = jobs->begin(); job != jobs->end(); job++) {
+            for (auto job = job_list->begin(); job != job_list->end(); job++) {
                 if (runjob(*job) == 0)
                     last_command_success = true;
                 else
@@ -151,14 +150,70 @@ void Shell::start() {
 }
 
 int Shell::runjob(std::shared_ptr<Job> job) {
-    std::cout << "Job is " << job->str << std::endl;
-    return 1;
+    // Run the job. If the job is foreground process, block until the
+    // job is finished or "ctrl-z" is pressed.
+
+    // Count the number of commands we expect
+    job->num_processes = job->commands.size();
+
+    // Assign an integer id to the job
+    job->jid = get_next_jid();
+
+    // Add the job to our jobs list
+    jobs[job->jid] = job;
+
+    if (!job->is_background)
+        fg_process = job;
+
+    int input = STDIN_FILENO;
+    int output = STDOUT_FILENO;
+
+    for (auto cmd = job->commands.begin(); cmd != job->commands.end(); cmd++) {
+        if (cmd->is_builtin()) {
+            // TODO: Close stdin
+            input = STDIN_FILENO;
+            output = STDOUT_FILENO;
+
+            output += input;
+            input += output;
+
+            run_builtin(*cmd);
+        }
+    }
+    return 0;
 }
 
+unsigned int Shell::get_next_jid() {
+    while (jobs.count(max_jid) == 1)
+        max_jid = (max_jid + 1) % USHRT_MAX;
+    return max_jid;
+}
 void Shell::run_builtin_command(std::shared_ptr<Job> job) {
     std::cout << "running built in " << job->str << std::endl;
 }
 
-bool is_builtin(const std::string &command) { return false; }
+bool Shell::run_builtin(const Command &cmd) {
+    if (cmd.command == "exit") {
+        // Get the exit code if provided
+        int code = 0;
+        if (cmd.arguments.size() > 0)
+            code = atoi(cmd.arguments[0].c_str());
+        exit(code);
 
+    } else if (cmd.command == "cd") {
+        if (cmd.arguments.size() > 0) {
+            if (chdir(cmd.arguments[0].c_str()) == -1) {
+                // some error occured.
+                // print error message
+                return false;
+            }
+            cwd = getcwd(NULL, 0);
+        }
+
+    } else if (cmd.command == "fg") {
+
+    } else if (cmd.command == "bg") {
+    }
+    return true;
+}
 } // namespace tsh

@@ -36,13 +36,12 @@ Parser::parse(const Tokenizer &tokenizer) {
                     throw std::string("Parse Error");
                 }
 
-                auto cur_command =
-                    std::shared_ptr<Command>(new Command((*tokens)[pos].text));
-                curjob->commands.push_back(cur_command);
+                curjob->commands.push_back(Command((*tokens)[pos].text));
                 pos++;
                 // get the arguments
                 while ((*tokens)[pos].type == TOK_STR) {
-                    cur_command->arguments.push_back((*tokens)[pos].text);
+                    // get the last added command, and append to its argument list
+                    curjob->commands.back().arguments.push_back((*tokens)[pos].text);
                     pos++;
                 }
                 // check if it is a background job

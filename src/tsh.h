@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <istream>
+#include <map>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -20,6 +21,7 @@ class Shell;
 Shell &getShell();
 
 class Job;
+class Command;
 
 class Shell {
 protected:
@@ -28,16 +30,27 @@ protected:
     // Prompt to show when more input is required
     std::string partial_prompt_str;
 
-    bool is_tty;
-    bool last_command_success;
-    bool show_prompt;
+    bool is_tty; // flag to check if it is running in TTY mode
+    bool
+        last_command_success; // flag to check if the last command was a success
+    bool show_prompt;         // show prompt or not
     bool print_tokens;
     bool print_parse_tree;
+
+    // The job that is currently in the foreground (with the controlling terminal)
+    std::shared_ptr<Job> fg_process;
+
+    // This is used to store the currently running jobs. They are integer indexed
+    std::map<unsigned int, std::shared_ptr<Job>> jobs;
+
+    // The maximum value jid currently in use
+    unsigned int max_jid;
 
     Shell();
     virtual ~Shell() {}
 
     void run_builtin_command(std::shared_ptr<Job>);
+    unsigned int get_next_jid();
 
 public:
     void set_tty(bool tty);
@@ -51,7 +64,7 @@ public:
 
     int runjob(std::shared_ptr<Job>);
 
-    bool is_builtin(const std::string &);
+    bool run_builtin(const Command&);
 
     friend Shell &getShell();
 };

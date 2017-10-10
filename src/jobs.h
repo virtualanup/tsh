@@ -18,18 +18,24 @@ enum JobState {
 // This represent a single command : with parameter list
 class Command {
 public:
-    Command(std::string);
     std::string command;
     std::vector<std::string> arguments;
+
+    Command(std::string);
+    bool is_builtin();
 };
 
 class Job {
 public:
     bool is_background;
-    JobState state;  // state of the job
-    std::string str; // string for the entire job
+    JobState state;    // state of the job
+    std::string str;   // string for the entire job
+    int num_processes; // Number of processes in the current job
+    unsigned int jid;  // Job ID
+
     // commands for the job
-    std::vector<std::shared_ptr<Command>> commands;
+    std::vector<Command> commands;
+
     Job();
     virtual ~Job();
 };
