@@ -49,8 +49,8 @@ protected:
     Shell();
     virtual ~Shell() {}
 
-    void run_builtin_command(std::shared_ptr<Job>);
     unsigned int get_next_jid();
+    bool run_builtin(const Command &cmd);
 
 public:
     void set_tty(bool tty);
@@ -63,8 +63,6 @@ public:
     void start();
 
     int runjob(std::shared_ptr<Job>);
-
-    bool run_builtin(const Command&);
 
     friend Shell &getShell();
 };

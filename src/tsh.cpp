@@ -177,7 +177,8 @@ int Shell::runjob(std::shared_ptr<Job> job) {
             output += input;
             input += output;
 
-            run_builtin(*cmd);
+            if(!run_builtin(*cmd))
+                last_command_success = false;
         }
     }
     return 0;
@@ -187,9 +188,6 @@ unsigned int Shell::get_next_jid() {
     while (jobs.count(max_jid) == 1)
         max_jid = (max_jid + 1) % USHRT_MAX;
     return max_jid;
-}
-void Shell::run_builtin_command(std::shared_ptr<Job> job) {
-    std::cout << "running built in " << job->str << std::endl;
 }
 
 bool Shell::run_builtin(const Command &cmd) {
@@ -209,7 +207,6 @@ bool Shell::run_builtin(const Command &cmd) {
             }
             cwd = getcwd(NULL, 0);
         }
-
     } else if (cmd.command == "fg") {
 
     } else if (cmd.command == "bg") {
