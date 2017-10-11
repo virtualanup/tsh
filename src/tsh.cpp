@@ -182,12 +182,10 @@ void Shell::runjob(std::shared_ptr<Job> job) {
         }
     }
 
-    if(job->is_background)
-    {
+    if (job->is_background) {
         last_command_success = true;
+    } else {
     }
-    else
-    {}
     return;
 }
 
@@ -221,4 +219,10 @@ bool Shell::run_builtin(const Command &cmd) {
     }
     return true;
 }
+// signal handlers
+void Shell::sigchild_handler(int sig) {}
+void Shell::sigtstp_handler(int sig) {}
+void Shell::sigint_handler(int sig) {}
+void Shell::sigquit_handler(int sig) {}
+
 } // namespace tsh

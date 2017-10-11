@@ -37,10 +37,12 @@ protected:
     bool print_tokens;
     bool print_parse_tree;
 
-    // The job that is currently in the foreground (with the controlling terminal)
+    // The job that is currently in the foreground (with the controlling
+    // terminal)
     std::shared_ptr<Job> fg_process;
 
-    // This is used to store the currently running jobs. They are integer indexed
+    // This is used to store the currently running jobs. They are integer
+    // indexed
     std::map<unsigned int, std::shared_ptr<Job>> jobs;
 
     // The maximum value jid currently in use
@@ -63,6 +65,12 @@ public:
     void start();
 
     void runjob(std::shared_ptr<Job>);
+
+    // signal handlers
+    void sigchild_handler(int sig);
+    void sigtstp_handler(int sig);
+    void sigint_handler(int sig);
+    void sigquit_handler(int sig);
 
     friend Shell &getShell();
 };
