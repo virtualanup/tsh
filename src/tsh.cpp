@@ -1,4 +1,5 @@
 #include "tsh.h"
+#include "errors.h"
 #include "parser.h"
 #include "tokenizer.h"
 
@@ -89,6 +90,8 @@ void Shell::start() {
             free(rl_cmd);
         }
 
+        last_command_success = true;
+
         // debug information about the tokens
         if (print_tokens) {
             auto tokens = tokenizer.tokenize();
@@ -135,10 +138,7 @@ void Shell::start() {
 
             // Run the command
             for (auto job = job_list->begin(); job != job_list->end(); job++) {
-                if (runjob(*job) == 0)
-                    last_command_success = true;
-                else
-                    last_command_success = false;
+                runjob(*job);
             }
 
         } catch (const std::string &error) {
@@ -149,7 +149,7 @@ void Shell::start() {
     }
 }
 
-int Shell::runjob(std::shared_ptr<Job> job) {
+void Shell::runjob(std::shared_ptr<Job> job) {
     // Run the job. If the job is foreground process, block until the
     // job is finished or "ctrl-z" is pressed.
 
@@ -177,11 +177,18 @@ int Shell::runjob(std::shared_ptr<Job> job) {
             output += input;
             input += output;
 
-            if(!run_builtin(*cmd))
+            if (!run_builtin(*cmd))
                 last_command_success = false;
         }
     }
-    return 0;
+
+    if(job->is_background)
+    {
+        last_command_success = true;
+    }
+    else
+    {}
+    return;
 }
 
 unsigned int Shell::get_next_jid() {
@@ -203,6 +210,7 @@ bool Shell::run_builtin(const Command &cmd) {
             if (chdir(cmd.arguments[0].c_str()) == -1) {
                 // some error occured.
                 // print error message
+                unix_error("Error");
                 return false;
             }
             cwd = getcwd(NULL, 0);

@@ -62,7 +62,7 @@ public:
     void initialize();
     void start();
 
-    int runjob(std::shared_ptr<Job>);
+    void runjob(std::shared_ptr<Job>);
 
     friend Shell &getShell();
 };
