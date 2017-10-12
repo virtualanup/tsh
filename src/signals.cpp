@@ -1,4 +1,5 @@
 #include "signals.h"
+#include "errors.h"
 #include "tsh.h"
 
 namespace tsh {
@@ -13,7 +14,7 @@ handler_type *Signal(int signum, handler_type *handler) {
     action.sa_flags = SA_RESTART; /* restart syscalls if possible */
 
     if (sigaction(signum, &action, &old_action) < 0)
-        throw "Signal Error";
+        unix_error("Signal Error");
     return (old_action.sa_handler);
 }
 
