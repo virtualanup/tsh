@@ -31,7 +31,7 @@ public:
     Token(TokenType token, const std::string &text, size_t start, size_t end,
           std::shared_ptr<std::string> command);
 
-    void print();
+    void print() const;
     virtual ~Token();
 };
 

@@ -54,6 +54,8 @@ protected:
     unsigned int get_next_jid();
     bool run_builtin(const Command &cmd);
 
+    void close_descriptor(int);
+
 public:
     void set_tty(bool tty);
     void set_show_prompt(bool show);

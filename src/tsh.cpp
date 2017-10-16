@@ -96,9 +96,9 @@ void Shell::start() {
         if (print_tokens) {
             auto tokens = tokenizer.tokenize();
             std::cout << "Tokens:" << std::endl;
-            for (size_t i = 0; i < tokens->size(); i++) {
-                (*tokens)[i].print();
-            }
+
+            for (const auto &token : *tokens)
+                token.print();
             std::cout << "End of tokens" << std::endl;
         }
 
@@ -109,24 +109,23 @@ void Shell::start() {
             if (print_parse_tree) {
                 std::cout << std::endl << std::endl;
                 std::cout << "Parse tree" << std::endl;
-                for (auto job = job_list->begin(); job != job_list->end();
-                     job++) {
+
+                for (const auto &job : *job_list) {
                     std::cout << std::endl;
-                    std::cout << "'" << (*job)->str << "'" << std::endl;
-                    if ((*job)->is_background)
+                    std::cout << "'" << job->str << "'" << std::endl;
+                    if (job->is_background)
                         std::cout << "Background job" << std::endl;
                     else
                         std::cout << "Foreground job" << std::endl;
-                    std::cout << (*job)->commands.size()
+                    std::cout << job->commands.size()
                               << " piped commands in job" << std::endl;
-                    for (auto cmd = (*job)->commands.begin();
-                         cmd != (*job)->commands.end(); cmd++) {
-                        std::cout << "\t" << '"' << (*cmd).command << '"'
+
+                    for (const auto &cmd : job->commands) {
+                        std::cout << "\t" << '"' << cmd.command << '"'
                                   << std::endl;
                         // print the arguments
-                        for (auto arg = cmd->arguments.begin();
-                             arg != cmd->arguments.end(); arg++)
-                            std::cout << "\t\t" << '"' << (*arg) << '"'
+                        for (const auto &arg : cmd.arguments)
+                            std::cout << "\t\t" << '"' << arg << '"'
                                       << std::endl;
                     }
                     std::cout << std::endl;
@@ -137,9 +136,8 @@ void Shell::start() {
             }
 
             // Run the command
-            for (auto job = job_list->begin(); job != job_list->end(); job++) {
-                runjob(*job);
-            }
+            for (auto &job : *job_list)
+                runjob(job);
 
         } catch (const std::string &error) {
             std::cout << "Error : " << error << std::endl;
@@ -165,19 +163,16 @@ void Shell::runjob(std::shared_ptr<Job> job) {
     if (!job->is_background)
         fg_process = job;
 
-    int input = STDIN_FILENO;
-    int output = STDOUT_FILENO;
+    //int input = STDIN_FILENO;
+    //int output = STDOUT_FILENO;
 
-    for (auto cmd = job->commands.begin(); cmd != job->commands.end(); cmd++) {
-        if (cmd->is_builtin()) {
-            // TODO: Close stdin
-            input = STDIN_FILENO;
-            output = STDOUT_FILENO;
+    for (auto &cmd : job->commands) {
+        if (cmd.is_builtin()) {
+            // built-in command
 
-            output += input;
-            input += output;
+            // TODO : Close pipes
 
-            if (!run_builtin(*cmd))
+            if (!run_builtin(cmd))
                 last_command_success = false;
         }
     }
@@ -219,10 +214,14 @@ bool Shell::run_builtin(const Command &cmd) {
     }
     return true;
 }
-// signal handlers
-void Shell::sigchild_handler(int sig) {
 
+void Shell::close_descriptor(int desc)
+{
+    if ((desc != STDIN_FILENO) && (desc != STDOUT_FILENO))
+        close(desc);
 }
+// signal handlers
+void Shell::sigchild_handler(int sig) {}
 void Shell::sigtstp_handler(int sig) {}
 void Shell::sigint_handler(int sig) {}
 void Shell::sigquit_handler(int sig) {}

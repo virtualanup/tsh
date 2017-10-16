@@ -8,10 +8,10 @@ Token::Token(TokenType token_type, const std::string &token_text,
     : type(token_type), text(token_text), start(start_pos), end(end_pos),
       command(command_str) {}
 
-void Token::print() {
+void Token::print() const {
     // print information about the token
     std::cout << TokenNames[static_cast<int>(type)] << "\t\t" << '"' << text
-              << '"' << "\t\t[" << start << " , " << end << ")"<<std::endl;
+              << '"' << "\t\t[" << start << " , " << end << ")" << std::endl;
 }
 Token::~Token() {}
 
@@ -53,7 +53,6 @@ void Tokenizer::reset() {
     inppos = 0;
     (*command) = "";
 }
-
 
 std::unique_ptr<std::vector<Token>> Tokenizer::tokenize() const {
     auto tokens = std::unique_ptr<std::vector<Token>>(new std::vector<Token>);
