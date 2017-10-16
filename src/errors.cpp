@@ -12,6 +12,8 @@ void unix_error(const std::string &msg) {
 }
 
 // Shell error. Just print the message
-void tsh_error(const std::string &msg) { std::cout << msg << std::endl; }
+void tsh_error(const std::string &msg) {
+    std::cout << "TSH Error : " << msg << std::endl;
+}
 
 } // namespace tsh

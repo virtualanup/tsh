@@ -2,7 +2,9 @@
 #include "jobs.h"
 namespace tsh {
 
-Command::Command(std::string cmd) : command(cmd) {}
+    Command::Command(std::string cmd) : command(cmd) {
+        arguments.push_back(cmd);
+    }
 
 bool Command::is_builtin() {
     if (command == "cd" || command == "exit" || command == "fg" ||

@@ -45,14 +45,20 @@ protected:
     // indexed
     std::map<unsigned int, std::shared_ptr<Job>> jobs;
 
+    std::map<unsigned int, std::shared_ptr<Job>> pidmap;
+
     // The maximum value jid currently in use
     unsigned int max_jid;
 
+    // constructor and destructor are protected for singeleton pattern
     Shell();
     virtual ~Shell() {}
 
     unsigned int get_next_jid();
     bool run_builtin(const Command &cmd);
+
+    void list_jobs() const;
+    int tsh_execvp(const Command&);
 
     void close_descriptor(int);
 

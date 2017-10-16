@@ -1,6 +1,7 @@
 #include "tsh.h"
 #include "errors.h"
 #include "parser.h"
+#include "signals.h"
 #include "tokenizer.h"
 
 #include <climits>
@@ -38,6 +39,16 @@ void Shell::set_prompt(const std::string &prompt) { prompt_str = prompt + " "; }
 void Shell::start() {
     Parser parser;
     Tokenizer tokenizer;
+
+    // Ignore print in the main shell when in background mode
+    Signal(SIGTTIN, SIG_IGN);
+    Signal(SIGTTOU, SIG_IGN);
+
+    if (is_tty) {
+        tcsetpgrp(STDIN_FILENO, getpgrp());
+        tcsetpgrp(STDOUT_FILENO, getpgrp());
+    }
+
     // enter the main loop for the shell
     while (true) {
         // read line via readline
@@ -163,17 +174,86 @@ void Shell::runjob(std::shared_ptr<Job> job) {
     if (!job->is_background)
         fg_process = job;
 
-    //int input = STDIN_FILENO;
-    //int output = STDOUT_FILENO;
+    int input = STDIN_FILENO;
+    int output = STDOUT_FILENO;
 
+    // file descriptors for pipes
+    int pipefd[2];
+
+    unsigned int index = 0;
     for (auto &cmd : job->commands) {
+        index += 1;
+
         if (cmd.is_builtin()) {
             // built-in command
 
-            // TODO : Close pipes
-
             if (!run_builtin(cmd))
                 last_command_success = false;
+        } else {
+            // Create pipes if the command is not last command
+            if (index != job->commands.size()) {
+                if (!pipe(pipefd)) {
+                    unix_error("Error creating Pipes : ");
+                    close_descriptor(input);
+                }
+                output = pipefd[1];
+            } else {
+                output = STDOUT_FILENO;
+            }
+
+            // fork a child process
+            int pid = fork();
+            if (pid < 0) {
+                tsh_error("Error in fork");
+            } else if (pid > 0) {
+                // Parent process
+
+                // Map the newly created process ID to the job
+                pidmap[pid] = job;
+            } else {
+                // child process
+                reset_signals();
+                if (job->pgid == 0)
+                    job->pgid = getpid();
+
+                if (setpgid(0, job->pgid) == -1) {
+                    close_descriptor(input);
+                    close_descriptor(pipefd[0]);
+                    close_descriptor(pipefd[1]);
+                    unix_error("Error in setting group ID in Child Process");
+                    continue;
+                }
+
+                // Set the pipes to input and output
+                if (input != STDIN_FILENO) {
+                    dup2(input, STDIN_FILENO);
+                    close(input);
+                }
+
+                if (output != STDOUT_FILENO) {
+                    dup2(output, STDOUT_FILENO);
+                    close(output);
+                }
+
+                // close one end of the pipe
+                close_descriptor(pipefd[0]);
+
+                // if the job is not background, give terminal access
+                // (controlling terminal)
+                if (!job->is_background) {
+                    tcsetpgrp(STDIN_FILENO, job->pgid);
+                }
+
+                // jobs is an internal command but we fork a child process
+                // and allow pipe redirction to it.
+                if (cmd.command == "jobs") {
+                    list_jobs();
+                } else if (tsh_execvp(cmd) < 0) {
+                    unix_error(std::string("Error : ") + cmd.command);
+                }
+                // Command may be successful. Exit
+                exit(0);
+            }
         }
     }
 
@@ -214,9 +294,22 @@ bool Shell::run_builtin(const Command &cmd) {
     }
     return true;
 }
+void Shell::list_jobs() const {
+    for (const auto jobpair : jobs) {
+        std::cout << jobpair.first << ":" << jobpair.second << std::endl;
+    }
+}
+int Shell::tsh_execvp(const Command &cmd) {
+    std::vector<char*> strcmds;
+    for(const auto& strcmd : cmd.arguments){
+        strcmds.push_back(const_cast<char*>(strcmd.c_str()));
+    }
+    char ** command = &strcmds[0];
+    std::cout<<"Here"<<std::endl;
+    return execvp(command[0], command);
+}
 
-void Shell::close_descriptor(int desc)
-{
+void Shell::close_descriptor(int desc) {
     if ((desc != STDIN_FILENO) && (desc != STDOUT_FILENO))
         close(desc);
 }

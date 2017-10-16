@@ -31,6 +31,9 @@ public:
     JobState state;    // state of the job
     std::string str;   // string for the entire job
     int num_processes; // Number of processes in the current job
+
+    int pgid;
+
     unsigned int jid;  // Job ID
 
     // commands for the job
