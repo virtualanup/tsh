@@ -302,14 +302,14 @@ void Shell::runjob(std::shared_ptr<Job> job) {
                 // Command may be successful. Exit
                 exit(0);
             }
-            // Parent must wait for the child process to finish
-            waitfg();
         }
     }
 
     if (job->is_background) {
         last_command_success = true;
     } else {
+        // Parent must wait for the child process to finish
+        waitfg();
     }
     return;
 }
@@ -402,23 +402,20 @@ void Shell::sigchild_handler(int sig) {
             if (WIFSTOPPED(status)) {
                 job->state = STATE_STOPPED;
                 fg_job = NULL;
-                DEBUG_MSG("Job "<<job->jid<<" Stopped");
-            }
-            else
-            {
-                DEBUG_MSG("Removing "<<p<<"from pid map");
+                DEBUG_MSG("Job " << job->jid << " Stopped");
+            } else {
+                DEBUG_MSG("Removing " << p << "from pid map");
                 pidmap.erase(p);
                 // A process has terminated. Update the job list
                 job->num_processes -= 1;
-                DEBUG_MSG("Remaining processes : "<<job->num_processes);
-                if(job->num_processes == 0)
-                {
-                    //all the processes of the job terminated. Delete the job
+                DEBUG_MSG("Remaining processes : " << job->num_processes);
+                if (job->num_processes == 0) {
+                    // all the processes of the job terminated. Delete the job
                     job->state = STATE_FINISHED;
                     // remove if it was foreground job
-                    if(job == fg_job)
+                    if (job == fg_job)
                         fg_job = NULL;
-                    DEBUG_MSG("Removing "<<job->jid<<"from jobs map");
+                    DEBUG_MSG("Removing " << job->jid << "from jobs map");
                     jobs.erase(job->jid);
                 }
             }
