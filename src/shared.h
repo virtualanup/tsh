@@ -1,7 +1,7 @@
 #ifndef TSH_SHARED_H
 #define TSH_SHARED_H
 
-#define DEBUG
+//#define DEBUG
 
 // DEBUG_MSG will print only if DEBUG is defined
 #ifdef DEBUG

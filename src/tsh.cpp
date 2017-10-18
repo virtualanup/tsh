@@ -7,6 +7,7 @@
 #include <climits>
 #include <readline/history.h>
 #include <readline/readline.h>
+#include <sys/wait.h>
 
 namespace tsh {
 
@@ -22,15 +23,23 @@ Shell &getShell() {
 Shell::Shell()
     : cwd(""), prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
       last_command_success(true), show_prompt(true), print_tokens(false),
-      print_parse_tree(false), fg_process(NULL), max_jid(0)
+      print_parse_tree(false), fg_job(NULL), max_jid(0)
 
-{}
+{
+    install_signals();
+}
 
 void Shell::initialize() { cwd = getcwd(NULL, 0); }
 
-void Shell::set_tty(bool tty) { is_tty = tty; }
+void Shell::set_tty(bool tty) {
+    DEBUG_MSG("Setting tty to " << tty);
+    is_tty = tty;
+}
 
-void Shell::set_show_prompt(bool show) { show_prompt = show; }
+void Shell::set_show_prompt(bool show) {
+    DEBUG_MSG("Setting show_prompt to " << show);
+    show_prompt = show;
+}
 void Shell::set_print_tokens(bool print) { print_tokens = print; }
 void Shell::set_print_parsetree(bool print) { print_parse_tree = print; }
 
@@ -70,9 +79,9 @@ void Shell::start() {
 
         rl_cmd = readline(prompt.c_str());
 
-        if (!rl_cmd)
+        if (!rl_cmd) {
             break;
-
+        }
         // add to tokenizer
         tokenizer.add_string(rl_cmd);
 
@@ -151,9 +160,8 @@ void Shell::start() {
                 runjob(job);
 
         } catch (const std::string &error) {
-            std::cout << "Error : " << error << std::endl;
+            std::cout << "Error Exception : " << error << std::endl;
             last_command_success = false;
-            continue;
         }
     }
 }
@@ -171,8 +179,12 @@ void Shell::runjob(std::shared_ptr<Job> job) {
     // Add the job to our jobs list
     jobs[job->jid] = job;
 
-    if (!job->is_background)
-        fg_process = job;
+    if (!job->is_background) {
+        // update the foreground job
+        fg_job = job;
+        job->state = STATE_FOREGROUND;
+    } else
+        job->state = STATE_BACKGROUND;
 
     int input = STDIN_FILENO;
     int output = STDOUT_FILENO;
@@ -185,37 +197,73 @@ void Shell::runjob(std::shared_ptr<Job> job) {
         index += 1;
 
         if (cmd.is_builtin()) {
+            // Since we don't create any process for this
+            job->num_processes -= 1;
             // built-in command
-
             if (!run_builtin(cmd))
                 last_command_success = false;
         } else {
             // Create pipes if the command is not last command
             if (index != job->commands.size()) {
-                if (!pipe(pipefd)) {
+                if (pipe(pipefd) == -1) {
                     unix_error("Error creating Pipes : ");
                     close_descriptor(input);
+                    return;
                 }
                 output = pipefd[1];
+                DEBUG_MSG("Pipe created for command " << cmd.command);
             } else {
                 output = STDOUT_FILENO;
+                DEBUG_MSG("Pipe not created for list command " << cmd.command);
             }
 
             // fork a child process
             int pid = fork();
             if (pid < 0) {
                 tsh_error("Error in fork");
+                return;
             } else if (pid > 0) {
                 // Parent process
-
+                DEBUG_MSG("Parent process : Child process " << pid
+                                                            << " Created");
                 // Map the newly created process ID to the job
                 pidmap[pid] = job;
+                if (job->pgid == 0) {
+                    job->pgid = pid;
+                    DEBUG_MSG("Initializing the pid of job to " << job->pgid);
+                }
+                // set group ID of the child process
+                if (setpgid(pid, job->pgid) == -1) {
+                    unix_error("Error in setting group ID in parent");
+                    close_descriptor(input);
+                    close_descriptor(pipefd[0]);
+                    close_descriptor(pipefd[1]);
+                    return;
+                }
+
+                // if the job is foreground job, give controlling terminal
+                if (!job->is_background) {
+                    tcsetpgrp(STDIN_FILENO, job->pgid);
+                    DEBUG_MSG("group for process " << pid << " Changed to "
+                                                   << job->pgid);
+                }
+                // close the reading end of previous process if it exist
+                close_descriptor(input);
+                // close the writing end of the current pipe here
+                close_descriptor(output);
+
+                // clean the pipes and set output as input of another process
+                input = pipefd[0];
             } else {
                 // child process
+                DEBUG_MSG("child process with process ID " << getpid()
+                                                           << " started");
                 reset_signals();
-                if (job->pgid == 0)
+                if (job->pgid == 0) {
                     job->pgid = getpid();
-
+                    DEBUG_MSG("First process....setting job pid to "
+                              << job->pgid);
+                }
                 if (setpgid(0, job->pgid) == -1) {
                     close_descriptor(input);
                     close_descriptor(pipefd[0]);
@@ -254,6 +302,8 @@ void Shell::runjob(std::shared_ptr<Job> job) {
                 // Command may be successful. Exit
                 exit(0);
             }
+            // Parent must wait for the child process to finish
+            waitfg();
         }
     }
 
@@ -270,6 +320,28 @@ unsigned int Shell::get_next_jid() {
     return max_jid;
 }
 
+void Shell::waitfg() {
+    std::shared_ptr<Job> job = fg_job;
+    // wait for the foreground process to terminate
+    if (job != NULL) {
+
+        if (is_tty) {
+            // set the job group ID as the controlling terminal
+            if (tcsetpgrp(STDIN_FILENO, job->pgid) < 0) {
+                tsh_error("TRM : Error in tc set pgrp for child\n");
+            }
+        }
+
+        while (fg_job != NULL)
+            ;
+
+        if (is_tty) {
+            if (tcsetpgrp(STDIN_FILENO, getpgrp()) < 0) {
+                tsh_error("TRM : Error in tc set pgrp for parent\n");
+            }
+        }
+    }
+}
 bool Shell::run_builtin(const Command &cmd) {
     if (cmd.command == "exit") {
         // Get the exit code if provided
@@ -294,18 +366,20 @@ bool Shell::run_builtin(const Command &cmd) {
     }
     return true;
 }
+
 void Shell::list_jobs() const {
     for (const auto jobpair : jobs) {
         std::cout << jobpair.first << ":" << jobpair.second << std::endl;
     }
 }
+
 int Shell::tsh_execvp(const Command &cmd) {
-    std::vector<char*> strcmds;
-    for(const auto& strcmd : cmd.arguments){
-        strcmds.push_back(const_cast<char*>(strcmd.c_str()));
+    std::vector<char *> strcmds;
+    for (const auto &strcmd : cmd.arguments) {
+        strcmds.push_back(const_cast<char *>(strcmd.c_str()));
     }
-    char ** command = &strcmds[0];
-    std::cout<<"Here"<<std::endl;
+    strcmds.push_back(NULL);
+    char **command = &strcmds[0];
     return execvp(command[0], command);
 }
 
@@ -314,7 +388,43 @@ void Shell::close_descriptor(int desc) {
         close(desc);
 }
 // signal handlers
-void Shell::sigchild_handler(int sig) {}
+void Shell::sigchild_handler(int sig) {
+    DEBUG_MSG("SigChild received");
+    pid_t p;
+    int status;
+
+    while ((p = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
+        // Get job from the process ID
+        if (pidmap.find(p) == pidmap.end()) {
+            DEBUG_MSG("PID " << p << " not found in dictionary in sigchild");
+        } else {
+            std::shared_ptr<Job> job = pidmap[p];
+            if (WIFSTOPPED(status)) {
+                job->state = STATE_STOPPED;
+                fg_job = NULL;
+                DEBUG_MSG("Job "<<job->jid<<" Stopped");
+            }
+            else
+            {
+                DEBUG_MSG("Removing "<<p<<"from pid map");
+                pidmap.erase(p);
+                // A process has terminated. Update the job list
+                job->num_processes -= 1;
+                DEBUG_MSG("Remaining processes : "<<job->num_processes);
+                if(job->num_processes == 0)
+                {
+                    //all the processes of the job terminated. Delete the job
+                    job->state = STATE_FINISHED;
+                    // remove if it was foreground job
+                    if(job == fg_job)
+                        fg_job = NULL;
+                    DEBUG_MSG("Removing "<<job->jid<<"from jobs map");
+                    jobs.erase(job->jid);
+                }
+            }
+        }
+    }
+}
 void Shell::sigtstp_handler(int sig) {}
 void Shell::sigint_handler(int sig) {}
 void Shell::sigquit_handler(int sig) {}

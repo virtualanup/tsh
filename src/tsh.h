@@ -1,6 +1,8 @@
 #ifndef TSH_H
 #define TSH_H
 
+#include "shared.h"
+
 #include <iostream>
 #include <istream>
 #include <map>
@@ -39,7 +41,7 @@ protected:
 
     // The job that is currently in the foreground (with the controlling
     // terminal)
-    std::shared_ptr<Job> fg_process;
+    std::shared_ptr<Job> fg_job;
 
     // This is used to store the currently running jobs. They are integer
     // indexed
@@ -58,9 +60,10 @@ protected:
     bool run_builtin(const Command &cmd);
 
     void list_jobs() const;
-    int tsh_execvp(const Command&);
+    int tsh_execvp(const Command &);
 
     void close_descriptor(int);
+    void waitfg();
 
 public:
     void set_tty(bool tty);

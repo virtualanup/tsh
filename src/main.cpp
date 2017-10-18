@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
     }
 
     bool is_tty;
+
     if (isatty(fileno(stdin))) {
         is_tty = true;
     }

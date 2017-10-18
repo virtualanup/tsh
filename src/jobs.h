@@ -30,7 +30,8 @@ public:
     bool is_background;
     JobState state;    // state of the job
     std::string str;   // string for the entire job
-    int num_processes; // Number of processes in the current job
+
+    int num_processes; // Number of running processes in the current job
 
     int pgid;
 
