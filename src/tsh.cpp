@@ -300,7 +300,7 @@ void Shell::runjob(std::shared_ptr<Job> job) {
                     unix_error(std::string("Error : ") + cmd.command);
                 }
                 // Command may be successful. Exit
-                exit(0);
+                exit(1);
             }
         }
     }
@@ -417,6 +417,13 @@ void Shell::sigchild_handler(int sig) {
                         fg_job = NULL;
                     DEBUG_MSG("Removing " << job->jid << "from jobs map");
                     jobs.erase(job->jid);
+                    // determine if the last command was successful
+
+                    if (WEXITSTATUS(status) == 0)
+                        last_command_success = true;
+                    else
+                        last_command_success = false;
+                    //
                 }
             }
         }
