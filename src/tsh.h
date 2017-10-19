@@ -65,6 +65,8 @@ protected:
     void close_descriptor(int);
     void waitfg();
 
+    void delete_job(int jid);
+
 public:
     void set_tty(bool tty);
     void set_show_prompt(bool show);

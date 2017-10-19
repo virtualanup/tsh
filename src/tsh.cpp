@@ -299,7 +299,7 @@ void Shell::runjob(std::shared_ptr<Job> job) {
                     unix_error(std::string("Error : ") + cmd.command);
                 }
                 // Command may be successful. Exit
-                exit(1);
+                exit(2);
             }
         }
     }
@@ -307,8 +307,13 @@ void Shell::runjob(std::shared_ptr<Job> job) {
     if (job->is_background) {
         last_command_success = true;
     } else {
-        // Parent must wait for the child process to finish
-        waitfg();
+        if (job->num_processes == 0) {
+            // all the commands were internal commands.
+            delete_job(job->jid);
+        } else {
+            // Parent must wait for the child process to finish
+            waitfg();
+        }
     }
     return;
 }
@@ -360,16 +365,20 @@ bool Shell::run_builtin(const Command &cmd) {
             cwd = getcwd(NULL, 0);
         }
     } else if (cmd.command == "fg") {
-
+        std::cout << "fg is not implemented yet" << std::endl;
     } else if (cmd.command == "bg") {
+        std::cout << "bg is not implemented yet" << std::endl;
     }
     return true;
 }
 
 void Shell::list_jobs() const {
-    for (const auto jobpair : jobs) {
-        std::cout << jobpair.first << ":" << jobpair.second << std::endl;
+    for (const auto &jobpair : jobs) {
+        std::cout << "[" << jobpair.first << "]\t"
+                  << jobpair.second->get_str_state() << "\t"
+                  << jobpair.second->str << std::endl;
     }
+    exit(0);
 }
 
 int Shell::tsh_execvp(const Command &cmd) {
@@ -387,4 +396,10 @@ void Shell::close_descriptor(int desc) {
         close(desc);
 }
 
+void Shell::delete_job(int jid) {
+    std::shared_ptr<Job> job = jobs[jid];
+    if (job == fg_job)
+        fg_job = NULL;
+    jobs.erase(jid);
+}
 } // namespace tsh

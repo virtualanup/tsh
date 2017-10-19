@@ -74,10 +74,8 @@ void Shell::sigchild_handler(int sig) {
                     // all the processes of the job terminated. Delete the job
                     job->state = STATE_FINISHED;
                     // remove if it was foreground job
-                    if (job == fg_job)
-                        fg_job = NULL;
+                    delete_job(job->jid);
                     DEBUG_MSG("Removing " << job->jid << "from jobs map");
-                    jobs.erase(job->jid);
                     // determine if the last command was successful
 
                     if (WEXITSTATUS(status) == 0)

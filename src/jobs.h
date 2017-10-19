@@ -40,6 +40,7 @@ public:
     // commands for the job
     std::vector<Command> commands;
 
+    std::string get_str_state() const;
     Job();
     virtual ~Job();
 };
