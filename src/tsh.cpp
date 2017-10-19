@@ -355,8 +355,8 @@ bool Shell::run_builtin(const Command &cmd) {
         exit(code);
 
     } else if (cmd.command == "cd") {
-        if (cmd.arguments.size() > 0) {
-            if (chdir(cmd.arguments[0].c_str()) == -1) {
+        if (cmd.arguments.size() > 1) {
+            if (chdir(cmd.arguments[1].c_str()) == -1) {
                 // some error occured.
                 // print error message
                 unix_error("Error");
@@ -397,9 +397,11 @@ void Shell::close_descriptor(int desc) {
 }
 
 void Shell::delete_job(int jid) {
-    std::shared_ptr<Job> job = jobs[jid];
-    if (job == fg_job)
-        fg_job = NULL;
-    jobs.erase(jid);
+    if (jobs.count(jid) > 0) {
+        std::shared_ptr<Job> job = jobs[jid];
+        if (job == fg_job)
+            fg_job = NULL;
+        jobs.erase(jid);
+    }
 }
 } // namespace tsh
