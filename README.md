@@ -9,4 +9,4 @@ Go to the project root and enter the command
 
     make
 
-That's it.
+That's it. The project executeable is /build/tsh

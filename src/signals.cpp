@@ -1,6 +1,9 @@
 #include "signals.h"
 #include "errors.h"
 #include "tsh.h"
+#include"jobs.h"
+
+#include <sys/wait.h>
 
 namespace tsh {
 
@@ -44,5 +47,51 @@ void sigchild_handler(int sig) { getShell().sigchild_handler(sig); }
 void sigtstp_handler(int sig) { getShell().sigtstp_handler(sig); }
 void sigint_handler(int sig) { getShell().sigint_handler(sig); }
 void sigquit_handler(int sig) { getShell().sigquit_handler(sig); }
+
+// signal handlers
+void Shell::sigchild_handler(int sig) {
+    DEBUG_MSG("SigChild received");
+    pid_t p;
+    int status;
+
+    while ((p = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
+        // Get job from the process ID
+        if (pidmap.find(p) == pidmap.end()) {
+            DEBUG_MSG("PID " << p << " not found in dictionary in sigchild");
+        } else {
+            std::shared_ptr<Job> job = pidmap[p];
+            if (WIFSTOPPED(status)) {
+                job->state = STATE_STOPPED;
+                fg_job = NULL;
+                DEBUG_MSG("Job " << job->jid << " Stopped");
+            } else {
+                DEBUG_MSG("Removing " << p << "from pid map");
+                pidmap.erase(p);
+                // A process has terminated. Update the job list
+                job->num_processes -= 1;
+                DEBUG_MSG("Remaining processes : " << job->num_processes);
+                if (job->num_processes == 0) {
+                    // all the processes of the job terminated. Delete the job
+                    job->state = STATE_FINISHED;
+                    // remove if it was foreground job
+                    if (job == fg_job)
+                        fg_job = NULL;
+                    DEBUG_MSG("Removing " << job->jid << "from jobs map");
+                    jobs.erase(job->jid);
+                    // determine if the last command was successful
+
+                    if (WEXITSTATUS(status) == 0)
+                        last_command_success = true;
+                    else
+                        last_command_success = false;
+                    //
+                }
+            }
+        }
+    }
+}
+void Shell::sigtstp_handler(int sig) {}
+void Shell::sigint_handler(int sig) {}
+void Shell::sigquit_handler(int sig) {}
 
 } // namespace tsh
