@@ -368,7 +368,59 @@ bool Shell::run_builtin(const Command &cmd) {
             cwd = getcwd(NULL, 0);
         }
     } else if (cmd.command == "fg") {
-        std::cout << "fg is not implemented yet" << std::endl;
+        std::shared_ptr<Job> job = NULL;
+        if (cmd.arguments.size() > 1) {
+            // user passed the jid
+            int jid = atoi(cmd.arguments[1].c_str());
+            if (jobs.count(jid) == 0) {
+                std::cout << "fg: Job not found: " << jid << std::endl;
+                return false;
+            }
+            job = jobs[jid];
+        } else {
+            // No job ID provided. Bring back the last suspended job or
+            // background job
+
+            for (auto pair = jobs.rbegin(); pair != jobs.rend(); ++pair) {
+                if (pair->second->state == STATE_STOPPED) {
+                    job = pair->second;
+                    break;
+                }
+            }
+            if (job == NULL) {
+                for (auto pair = jobs.rbegin(); pair != jobs.rend(); ++pair) {
+                    if (pair->second->state == STATE_BACKGROUND) {
+                        job = pair->second;
+                        break;
+                    }
+                }
+            }
+
+            if (job == NULL) {
+                std::cout << "fg: No current job" << std::endl;
+                return false;
+            }
+        }
+
+        // Wake up the job if it is suspended
+        if (job->state == STATE_STOPPED) {
+            // send continue signal
+            job->state = STATE_FOREGROUND;
+
+            if (kill(-job->pgid, SIGCONT) == -1) {
+                unix_error("Can't continue process group " +
+                           std::to_string(job->pgid));
+                return false;
+            }
+        } else {
+            job->state = STATE_FOREGROUND;
+        }
+        job->print_status();
+        fg_job = job;
+        waitfg();
+        // last command success would have beeen set by now.
+        return last_command_success;
+
     } else if (cmd.command == "bg") {
         std::cout << "bg is not implemented yet" << std::endl;
     }
