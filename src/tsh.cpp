@@ -305,6 +305,9 @@ void Shell::runjob(std::shared_ptr<Job> job) {
     }
 
     if (job->is_background) {
+        // print status message
+        std::cout << std::endl
+                  << "[" << job->jid << "] " << job->pgid << std::endl;
         last_command_success = true;
     } else {
         if (job->num_processes == 0) {

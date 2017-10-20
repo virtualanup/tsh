@@ -41,8 +41,10 @@ public:
     std::vector<Command> commands;
 
     std::string get_str_state() const;
+    void print_status() const;
     Job();
     virtual ~Job();
+
 };
 
 } // namespace tsh

@@ -18,10 +18,16 @@ std::string Job::get_str_state() const {
     if (state == STATE_STOPPED)
         return std::string("Stopped");
     if (state == STATE_FINISHED)
-        return std::string("Finished");
+        return std::string("Done");
     if (state == STATE_UNDEFINED)
         return std::string("Undefined");
     return std::string("Running");
+}
+
+void Job::print_status() const {
+    std::cout << std::endl
+              << "[" << jid << "] " << pgid << " " << get_str_state() << "\t"
+              << str << std::endl;
 }
 
 } // namespace tsh

@@ -1,7 +1,7 @@
 #include "signals.h"
 #include "errors.h"
+#include "jobs.h"
 #include "tsh.h"
-#include"jobs.h"
 
 #include <sys/wait.h>
 
@@ -63,6 +63,7 @@ void Shell::sigchild_handler(int sig) {
             if (WIFSTOPPED(status)) {
                 job->state = STATE_STOPPED;
                 fg_job = NULL;
+                job->print_status();
                 DEBUG_MSG("Job " << job->jid << " Stopped");
             } else {
                 DEBUG_MSG("Removing " << p << "from pid map");
@@ -71,6 +72,10 @@ void Shell::sigchild_handler(int sig) {
                 job->num_processes -= 1;
                 DEBUG_MSG("Remaining processes : " << job->num_processes);
                 if (job->num_processes == 0) {
+
+                    bool printstatus = false;
+                    if (job->state == STATE_BACKGROUND)
+                        printstatus = true;
                     // all the processes of the job terminated. Delete the job
                     job->state = STATE_FINISHED;
                     // remove if it was foreground job
@@ -82,7 +87,9 @@ void Shell::sigchild_handler(int sig) {
                         last_command_success = true;
                     else
                         last_command_success = false;
-                    //
+
+                    if (printstatus)
+                        job->print_status();
                 }
             }
         }
