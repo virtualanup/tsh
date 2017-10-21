@@ -13,6 +13,5 @@ That's it. The project executeable is /build/tsh
 
 TSH supports multiple commands and pipes. Jobs command is implemented but bg and fg are not yet implemented.
 TODO:
-    Implement bg command
     Enable history
     store history in .tsh_history in home directory
