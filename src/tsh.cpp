@@ -465,9 +465,10 @@ bool Shell::run_builtin(const Command &cmd) {
 
 void Shell::list_jobs() const {
     for (const auto &jobpair : jobs) {
-        std::cout << "[" << jobpair.first << "]\t"
-                  << jobpair.second->get_str_state() << "\t"
-                  << jobpair.second->str << std::endl;
+        if (jobpair.second != fg_job)
+            std::cout << "[" << jobpair.first << "]\t"
+                      << jobpair.second->get_str_state() << "\t"
+                      << jobpair.second->str << std::endl;
     }
     exit(0);
 }
