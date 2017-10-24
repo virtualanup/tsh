@@ -5,6 +5,7 @@
 #include "tokenizer.h"
 
 #include <climits>
+#include <pwd.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 
@@ -28,7 +29,11 @@ Shell::Shell()
     install_signals();
 }
 
-void Shell::initialize() { cwd = getcwd(NULL, 0); }
+void Shell::initialize() {
+    cwd = getcwd(NULL, 0);
+    passwd *pw = getpwuid(getuid());
+    home_dir = std::string(pw->pw_dir);
+}
 
 void Shell::set_tty(bool tty) {
     DEBUG_MSG("Setting tty to " << tty);
@@ -360,7 +365,11 @@ bool Shell::run_builtin(const Command &cmd) {
 
     } else if (cmd.command == "cd") {
         if (cmd.arguments.size() > 1) {
-            if (chdir(cmd.arguments[1].c_str()) == -1) {
+            std::string dir = cmd.arguments[1];
+            if (dir.size() >= 2 && dir.substr(0, 2) == "~/") {
+                dir = home_dir + dir.substr(1, dir.size() - 1);
+            }
+            if (chdir(dir.c_str()) == -1) {
                 // some error occured.
                 // print error message
                 unix_error("Error");

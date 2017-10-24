@@ -28,6 +28,7 @@ class Command;
 class Shell {
 protected:
     std::string cwd;
+    std::string home_dir;
     std::string prompt_str;
     // Prompt to show when more input is required
     std::string partial_prompt_str;
