@@ -67,6 +67,7 @@ protected:
     void waitfg();
 
     void delete_job(int jid);
+    void update_cwd();
 
 public:
     void set_tty(bool tty);

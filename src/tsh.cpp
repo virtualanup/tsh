@@ -21,7 +21,7 @@ Shell &getShell() {
 }
 
 Shell::Shell()
-    : cwd(""), prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
+    : prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
       last_command_success(true), show_prompt(true), print_tokens(false),
       print_parse_tree(false), fg_job(NULL), max_jid(0)
 
@@ -30,9 +30,9 @@ Shell::Shell()
 }
 
 void Shell::initialize() {
-    cwd = getcwd(NULL, 0);
     passwd *pw = getpwuid(getuid());
     home_dir = std::string(pw->pw_dir);
+    update_cwd();
 }
 
 void Shell::set_tty(bool tty) {
@@ -375,7 +375,8 @@ bool Shell::run_builtin(const Command &cmd) {
                 unix_error("Error");
                 return false;
             }
-            cwd = getcwd(NULL, 0);
+            // update the cwd
+            update_cwd();
         }
     } else if (cmd.command == "fg") {
         std::shared_ptr<Job> job = NULL;
@@ -503,6 +504,20 @@ void Shell::delete_job(int jid) {
         if (job == fg_job)
             fg_job = NULL;
         jobs.erase(jid);
+    }
+}
+
+void Shell::update_cwd() {
+    cwd = getcwd(NULL, 0);
+    // If cwd is inside home directory, replace initial part with ~/
+    if (cwd.size() >= home_dir.size() &&
+        cwd.substr(0, home_dir.size()) == home_dir) {
+        std::string new_cwd = "~/";
+
+        if (cwd.size() > home_dir.size())
+            new_cwd +=
+                cwd.substr(home_dir.size() + 1, cwd.size() - home_dir.size());
+        cwd = new_cwd;
     }
 }
 } // namespace tsh
