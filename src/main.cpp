@@ -10,7 +10,8 @@
 static struct option long_options[] = {
     {"help", 0, NULL, 'h'},      {"verbose", 0, NULL, 'v'},
     {"noprompt", 0, NULL, 'p'},  {"tokens", 0, NULL, 't'},
-    {"parsetree", 0, NULL, 'r'}, {NULL, 0, NULL, 0}};
+    {"parsetree", 0, NULL, 'r'}, {"incognito", 0, NULL, 'i'},
+    {NULL, 0, NULL, 0}};
 
 void help_usage();
 int main(int argc, char *argv[]) {
@@ -19,7 +20,7 @@ int main(int argc, char *argv[]) {
     tsh::Shell &shell = tsh::getShell();
 
     // loop over all of the options
-    while ((ch = getopt_long(argc, argv, "hpvtr", long_options, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "hpvtri", long_options, NULL)) != -1) {
         // check to see if a single character or long option came through
         switch (ch) {
         case 'h':
@@ -33,6 +34,9 @@ int main(int argc, char *argv[]) {
             break;
         case 't':
             shell.set_print_tokens(true);
+            break;
+        case 'i':
+            shell.set_incognito(true);
             break;
         case 'r':
             shell.set_print_parsetree(true);
@@ -64,6 +68,8 @@ void help_usage() {
               << std::endl;
     std::cout << "    -t    --tokens \t\tPrint Tokens" << std::endl;
     std::cout << "    -r    --parsetree \t\tPrint Parse Tree" << std::endl;
+    std::cout << "    -i    --incognito \t\tDoesnot store commands in history"
+              << std::endl;
 
     exit(0);
 }

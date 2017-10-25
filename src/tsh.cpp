@@ -24,7 +24,7 @@ Shell &getShell() {
 Shell::Shell()
     : prompt_str("▶ "), partial_prompt_str("◀ "), is_tty(false),
       last_command_success(true), show_prompt(true), print_tokens(false),
-      print_parse_tree(false), keep_history(true), fg_job(NULL), max_jid(0)
+      print_parse_tree(false), incognito(false), fg_job(NULL), max_jid(0)
 
 {
     install_signals();
@@ -35,8 +35,9 @@ void Shell::initialize() {
     home_dir = std::string(pw->pw_dir);
     update_cwd();
     history_file = home_dir + "/.tsh_history";
+
     // read previous commands from history file
-    if (keep_history) {
+    if (!incognito) {
         std::ifstream file(history_file);
         std::string line;
         while (getline(file, line)) {
@@ -127,6 +128,7 @@ void Shell::start() {
 
         // Add the command to hisotry
         add_history(tokenizer.get_command().c_str());
+
         add_command_history(tokenizer.get_command());
 
         last_command_success = true;
@@ -537,7 +539,7 @@ void Shell::update_cwd() {
 }
 
 void Shell::add_command_history(const std::string &command) {
-    if (keep_history && command.size() > 0) {
+    if (!incognito && command.size() > 0) {
         // record the comand
         std::ofstream history(history_file,
                               std::ios_base::app | std::ios_base::out);
@@ -545,4 +547,10 @@ void Shell::add_command_history(const std::string &command) {
         history.close();
     }
 }
+
+void Shell::set_incognito(bool set)
+{
+    incognito = set;
+}
+
 } // namespace tsh

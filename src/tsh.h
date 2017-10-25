@@ -40,7 +40,7 @@ protected:
     bool show_prompt;         // show prompt or not
     bool print_tokens;
     bool print_parse_tree;
-    bool keep_history;
+    bool incognito;
 
     // The job that is currently in the foreground (with the controlling
     // terminal)
@@ -78,6 +78,7 @@ public:
     void set_show_prompt(bool show);
     void set_print_tokens(bool print);
     void set_print_parsetree(bool print);
+    void set_incognito(bool set);
 
     void set_prompt(const std::string &);
     void initialize();
