@@ -27,6 +27,7 @@ class Command;
 
 class Shell {
 protected:
+    std::string history_file;
     std::string cwd;
     std::string home_dir;
     std::string prompt_str;
@@ -39,6 +40,7 @@ protected:
     bool show_prompt;         // show prompt or not
     bool print_tokens;
     bool print_parse_tree;
+    bool keep_history;
 
     // The job that is currently in the foreground (with the controlling
     // terminal)
@@ -68,6 +70,8 @@ protected:
 
     void delete_job(int jid);
     void update_cwd();
+
+    void add_command_history(const std::string&);
 
 public:
     void set_tty(bool tty);
