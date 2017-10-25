@@ -1,6 +1,6 @@
 # TSH
 
-A small minimal shell made in C++.
+A minimal shell made in C++.
 
 ![TSH](/github/screenshot.png?raw=true "TSH in action")
 
@@ -9,6 +9,6 @@ Go to the project root and enter the command
 
     make
 
-That's it. The project executeable is /build/tsh
+The project executeable is /build/tsh
 
-TSH supports multiple commands and pipes.
+TSH supports multiple commands and pipes. Command history is saved in ~/.tsh_history file.
