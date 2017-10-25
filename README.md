@@ -12,7 +12,3 @@ Go to the project root and enter the command
 That's it. The project executeable is /build/tsh
 
 TSH supports multiple commands and pipes.
-
-TODO:
-    Enable history
-    store history in .tsh_history in home directory
